@@ -47,7 +47,8 @@ const main = async () => {
     }),
     context: ({req, res}) => ({ req, res, em: orm.em }),
   });
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({ app,
+    cors: { origin: "http://localhost:3000", credentials: true } });
   // const post = orm.em.create(Post, { title: "my first post" });
   // await orm.em.persistAndFlush(post);
 
