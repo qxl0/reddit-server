@@ -14,17 +14,17 @@ const user_1 = require("./resolvers/user");
 const express_session_1 = __importDefault(require("express-session"));
 const connect_redis_1 = __importDefault(require("connect-redis"));
 const constants_1 = require("./constants");
-const redis_1 = __importDefault(require("redis"));
+const ioredis_1 = __importDefault(require("ioredis"));
 const main = async () => {
     const orm = await core_1.MikroORM.init(mikro_orm_config_1.default);
     await orm.getMigrator().up();
     const app = (0, express_1.default)();
     const RedisStore = (0, connect_redis_1.default)(express_session_1.default);
-    const redisClient = redis_1.default.createClient();
+    const redis = new ioredis_1.default();
     app.use((0, express_session_1.default)({
         name: "qid",
         store: new RedisStore({
-            client: redisClient,
+            client: redis,
             disableTouch: true,
         }),
         cookie: {
@@ -42,7 +42,7 @@ const main = async () => {
             resolvers: [hello_1.HelloResolver, post_1.PostResolver, user_1.UserResolver],
             validate: false,
         }),
-        context: ({ req, res }) => ({ req, res, em: orm.em }),
+        context: ({ req, res }) => ({ req, res, em: orm.em, redis }),
     });
     apolloServer.applyMiddleware({ app,
         cors: { origin: "http://localhost:3000", credentials: true } });
