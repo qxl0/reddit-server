@@ -1,43 +1,50 @@
-import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
+import { isAuth } from "../middleware/isAuth";
+import { Arg, Ctx, Field, InputType, Int, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
 import { Post } from "../entities/Post";
 import { MyContext } from "../types";
+
+@InputType()
+class PostInput {
+  @Field()
+  title: string;
+  @Field()
+  text: string;
+}
 
 @Resolver()
 export class PostResolver {
   @Query(() => [Post])
-  async posts(@Ctx() { em }: MyContext): Promise<Post[]> {
-    return await em.find(Post, {});
+  async posts(): Promise<Post[]> {
+    return Post.find();
   }
 
   @Query(() => Post, { nullable: true })
   async post(
-    @Ctx() { em }: MyContext,
     @Arg("id", () => Int) id: number
-  ): Promise<Post | null> {
-    return await em.findOne(Post, { id });
+  ): Promise<Post | undefined> {
+    return Post.findOne(id);
   }
 
+  @UseMiddleware(isAuth)
   @Mutation(() => Post)
   async createPost(
-    @Arg("title") title: string,
-    @Ctx() { em }: MyContext
+    @Arg("input") input: PostInput,
+    @Ctx() { req }: MyContext
   ): Promise<Post> {
-    const post = em.create(Post, { title });
-    await em.persistAndFlush(post);
-    return post;
+    return Post.create({...input, 
+    creatorId: req.session.userId}).save();
   }
 
   @Mutation(() => Post, { nullable: true })
   async updatePost(
     @Arg("id", () => Int) id: number,
     @Arg("title", () => String, { nullable: true }) title: string,
-    @Ctx() { em }: MyContext
   ): Promise<Post | null> {
-    const post = await em.findOne(Post, { id });
+    const post = await Post.findOne(id);
     if (!post) return null;
     if (typeof title !== "undefined") {
       post.title = title;
-      await em.persistAndFlush(post);
+      await Post.update({ id }, { title });
     }
     return post;
   }
@@ -45,9 +52,8 @@ export class PostResolver {
   @Mutation(() => Boolean)
   async deletePost(
     @Arg("id", () => Int) id: number,
-    @Ctx() { em }: MyContext
   ): Promise<boolean> {
-    await em.nativeDelete(Post, { id });
+    await Post.delete(id);
     return true;
   }
 
