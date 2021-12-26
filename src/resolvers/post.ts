@@ -1,5 +1,15 @@
 import { isAuth } from "../middleware/isAuth";
-import { Arg, Ctx, Field, InputType, Int, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
+import {
+  Arg,
+  Ctx,
+  Field,
+  InputType,
+  Int,
+  Mutation,
+  Query,
+  Resolver,
+  UseMiddleware,
+} from "type-graphql";
 import { Post } from "../entities/Post";
 import { MyContext } from "../types";
 
@@ -19,9 +29,7 @@ export class PostResolver {
   }
 
   @Query(() => Post, { nullable: true })
-  async post(
-    @Arg("id", () => Int) id: number
-  ): Promise<Post | undefined> {
+  async post(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
     return Post.findOne(id);
   }
 
@@ -31,14 +39,13 @@ export class PostResolver {
     @Arg("input") input: PostInput,
     @Ctx() { req }: MyContext
   ): Promise<Post> {
-    return Post.create({...input, 
-    creatorId: req.session.userId}).save();
+    return Post.create({ ...input, creatorId: req.session.userId }).save();
   }
 
   @Mutation(() => Post, { nullable: true })
   async updatePost(
     @Arg("id", () => Int) id: number,
-    @Arg("title", () => String, { nullable: true }) title: string,
+    @Arg("title", () => String, { nullable: true }) title: string
   ): Promise<Post | null> {
     const post = await Post.findOne(id);
     if (!post) return null;
@@ -50,11 +57,8 @@ export class PostResolver {
   }
 
   @Mutation(() => Boolean)
-  async deletePost(
-    @Arg("id", () => Int) id: number,
-  ): Promise<boolean> {
+  async deletePost(@Arg("id", () => Int) id: number): Promise<boolean> {
     await Post.delete(id);
     return true;
   }
-
 }
