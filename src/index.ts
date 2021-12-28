@@ -4,25 +4,29 @@ import { buildSchema } from "type-graphql";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 
-import session from 'express-session';
+import session from "express-session";
 import connectRedis from "connect-redis";
 import { __prod__ } from "./constants";
 import Redis from "ioredis";
 import { Post } from "./entities/Post";
 import { User } from "./entities/User";
 import { createConnection } from "typeorm";
-
+import path from "path";
 const main = async () => {
-
-  await createConnection({
+  // rerun
+  const conn = await createConnection({
     type: "postgres",
     database: "lireddit4",
     username: "postgres",
     password: "password",
     logging: true,
     synchronize: true,
+    migrations: [path.join(__dirname, "./migrations/*")],
     entities: [Post, User],
   });
+  console.log("conn is ", conn.isConnected)
+  // await Post.delete({});
+  await conn.runMigrations();
   const app = express();
   const RedisStore = connectRedis(session);
   const redis = new Redis();
@@ -46,16 +50,17 @@ const main = async () => {
     })
   );
 
-
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
       resolvers: [PostResolver, UserResolver],
       validate: false,
     }),
-    context: ({req, res}) => ({ req, res, redis}),
+    context: ({ req, res }) => ({ req, res, redis }),
   });
-  apolloServer.applyMiddleware({ app,
-    cors: { origin: "http://localhost:3000", credentials: true } });
+  apolloServer.applyMiddleware({
+    app,
+    cors: { origin: "http://localhost:3000", credentials: true },
+  });
   // const post = orm.em.create(Post, { title: "my first post" });
   // await orm.em.persistAndFlush(post);
 
