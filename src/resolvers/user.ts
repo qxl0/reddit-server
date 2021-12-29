@@ -43,7 +43,7 @@ export class UserResolver {
     if (req.session.userId === user.id) {
       return user.email;
     }
-    return null;
+    return "";
   }
 
   @Mutation(() => UserResponse)
@@ -59,8 +59,8 @@ export class UserResolver {
             field: "newPassword",
             message: "length must be greater than 2",
           },
-        ]
-      }
+        ],
+      };
     }
 
     const key = FORGET_PASSWORD_PREFIX + token;
@@ -90,7 +90,7 @@ export class UserResolver {
     }
 
     await User.update(
-      { id: userIdNum }, 
+      { id: userIdNum },
       {
         password: await argon2.hash(newPassword),
       }
@@ -131,15 +131,15 @@ export class UserResolver {
   }
 
   @Query(() => User, { nullable: true })
-  async me(@Ctx() { req }: MyContext){
+  async me(@Ctx() { req }: MyContext) {
     // you are not logged in
     if (!req.session.userId) {
       return null;
     }
 
-    const user = await User.findOne(req.session.userId );
+    const user = await User.findOne(req.session.userId);
 
-    return user ;
+    return user;
   }
 
   @Mutation(() => UserResponse)
@@ -147,7 +147,6 @@ export class UserResolver {
     @Arg("options") options: UsernamePasswordInput,
     @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
-    
     const errors = validateRegister(options);
     if (errors) {
       return { errors };
@@ -168,7 +167,7 @@ export class UserResolver {
         .returning("*")
         .execute();
       user = result.raw[0];
-    } catch(err){
+    } catch (err) {
       console.log(err);
       return {
         errors: [
@@ -177,12 +176,12 @@ export class UserResolver {
             message: "username doesnot exist",
           },
         ],
-      } 
+      };
     }
 
     req.session.userId = user.id;
 
-    return {user};
+    return { user };
   }
 
   @Mutation(() => UserResponse)
@@ -193,9 +192,9 @@ export class UserResolver {
   ): Promise<UserResponse> {
     const user = await User.findOne(
       usernameOrEmail.includes("@")
-        ? { email: usernameOrEmail}
-        : { username: usernameOrEmail}
-      );
+        ? { email: usernameOrEmail }
+        : { username: usernameOrEmail }
+    );
     if (!user) {
       return {
         errors: [
@@ -207,8 +206,7 @@ export class UserResolver {
       };
     }
 
-    const valid = await argon2.verify(user.password, 
-      password);
+    const valid = await argon2.verify(user.password, password);
     if (!valid) {
       return {
         errors: [
@@ -228,13 +226,11 @@ export class UserResolver {
   }
 
   @Mutation(() => Boolean)
-  async logout(
-    @Ctx() { req, res }: MyContext
-  ) {
-    return new Promise(resolve => {
-      req.session.destroy(err => {
+  async logout(@Ctx() { req, res }: MyContext) {
+    return new Promise((resolve) => {
+      req.session.destroy((err) => {
         res.clearCookie(COOKIE_NAME);
-        if (err){
+        if (err) {
           console.log(err);
           resolve(false);
           return;

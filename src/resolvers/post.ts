@@ -57,7 +57,7 @@ export class PostResolver {
     const posts = await getConnection().query(
       `
       select p.*,
-      json_build_object('id', u.id, 'username', u.username) creator
+      json_build_object('id', u.id, 'username', u.username, 'email', u.email) creator
       from post p inner join public.user u on p."creatorId" = u.id
       ${cursor?`where p."createdAt" < $2`: ""}
       order by p."createdAt" DESC
@@ -65,7 +65,7 @@ export class PostResolver {
       `,
       replacements
     );
-
+    
     return {
       posts: posts.slice(0, realLimit),
       hasMore: posts.length === realLimitPlusOne,
