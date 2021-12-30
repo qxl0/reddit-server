@@ -10,6 +10,8 @@ import { __prod__ } from "./constants";
 import Redis from "ioredis";
 import { Post } from "./entities/Post";
 import { User } from "./entities/User";
+import { Updoot } from "./entities/Updoot";
+
 import { createConnection } from "typeorm";
 import path from "path";
 const main = async () => {
@@ -22,7 +24,7 @@ const main = async () => {
     logging: true,
     synchronize: true,
     migrations: [path.join(__dirname, "./migrations/*")],
-    entities: [Post, User],
+    entities: [Post, User, Updoot],
   });
   console.log("conn is ", conn.isConnected)
   // await Post.delete({});
