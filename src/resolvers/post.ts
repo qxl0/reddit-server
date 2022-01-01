@@ -105,7 +105,11 @@ export class PostResolver {
     const realLimit = Math.min(50, limit);
     const realLimitPlusOne = realLimit + 1;
 
-    const replacements: any[] = [realLimitPlusOne, req.session.userId];
+    console.log("session", req.session);
+    const replacements: any[] = [realLimitPlusOne];
+    if (req.session.userId){
+      replacements.push(req.session.userId);
+    }
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)));
     }
@@ -114,13 +118,13 @@ export class PostResolver {
       `
       select p.*,
       json_build_object('id', u.id, 'username', u.username, 'email', u.email,
-                  'createdAt', u."createdAt", 'updatedAt', u."updatedAt") creator
+                  'createdAt', u."createdAt", 'updatedAt', u."updatedAt") creator,
       ${
         req.session.userId ?
         '(select value from updoot where "userId"=$2 and "postId"=p.id) "voteStatus"'
         : 'null as "voteStatus"'
       }
-      from post p inner join public.user on u.id=p."creatorId"
+      from post p inner join public.user u on u.id=p."creatorId"
       ${cursor?`where p."createdAt" < $3`: "" }
       order by p."createdAt" DESC
       limit $1
