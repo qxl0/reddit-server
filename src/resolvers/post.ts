@@ -1,4 +1,4 @@
- import { isAuth } from "../middleware/isAuth";
+import { isAuth } from "../middleware/isAuth";
 import {
   Arg,
   Ctx,
@@ -36,7 +36,7 @@ class PaginatedPosts {
 
 @Resolver(Post)
 export class PostResolver {
-  @FieldResolver(()=>String)
+  @FieldResolver(() => String)
   textSnippet(@Root() post: Post) {
     return post.text.slice(0, 50);
   }
@@ -47,7 +47,7 @@ export class PostResolver {
     @Arg("postId", () => Int) postId: number,
     @Arg("value", () => Int) value: number,
     @Ctx() { req }: MyContext
-  ){
+  ) {
     const isUpdoot = value !== -1;
     const realValue = isUpdoot ? 1 : -1;
     const { userId } = req.session;
@@ -88,14 +88,14 @@ export class PostResolver {
           set points = points + $1
           where id = $2
         `,
-          
+
           [realValue, postId]
         );
       });
     }
     return value;
   }
-  @Query(() => PaginatedPosts) 
+  @Query(() => PaginatedPosts)
   async posts(
     @Arg("limit", () => Int!) limit: number,
     @Arg("cursor", () => String, { nullable: true }) cursor: string | null,
@@ -107,11 +107,15 @@ export class PostResolver {
 
     console.log("session", req.session);
     const replacements: any[] = [realLimitPlusOne];
-    if (req.session.userId){
+    if (req.session.userId) {
       replacements.push(req.session.userId);
     }
+
+    let cursorIndex = 3;
+
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)));
+      cursorIndex = replacements.length;
     }
 
     const posts = await getConnection().query(
@@ -120,22 +124,22 @@ export class PostResolver {
       json_build_object('id', u.id, 'username', u.username, 'email', u.email,
                   'createdAt', u."createdAt", 'updatedAt', u."updatedAt") creator,
       ${
-        req.session.userId ?
-        '(select value from updoot where "userId"=$2 and "postId"=p.id) "voteStatus"'
-        : 'null as "voteStatus"'
+        req.session.userId
+          ? '(select value from updoot where "userId"=$2 and "postId"=p.id) "voteStatus"'
+          : 'null as "voteStatus"'
       }
       from post p inner join public.user u on u.id=p."creatorId"
-      ${cursor?`where p."createdAt" < $3`: "" }
+      ${cursor ? `where p."createdAt" < $${cursorIndex}` : ""}
       order by p."createdAt" DESC
       limit $1
       `,
       replacements
     );
-    
+
     return {
       posts: posts.slice(0, realLimit),
       hasMore: posts.length === realLimitPlusOne,
-    }
+    };
   }
 
   @Query(() => Post, { nullable: true })
